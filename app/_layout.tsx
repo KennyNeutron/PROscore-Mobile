@@ -31,6 +31,10 @@ export default function RootLayout() {
             name="index"
             options={{ title: "PROscore", headerShown: false }}
           />
+          <Stack.Screen
+            name="home"
+            options={{ title: "Home", headerShown: false }}
+          />
         </Stack>
       </ThemeProvider>
     </QueryClientProvider>
