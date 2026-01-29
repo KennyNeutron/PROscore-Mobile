@@ -35,6 +35,18 @@ export default function RootLayout() {
             name="home"
             options={{ title: "Home", headerShown: false }}
           />
+          <Stack.Screen
+            name="profile"
+            options={{ title: "Profile", headerShown: false }}
+          />
+          <Stack.Screen
+            name="settings"
+            options={{ title: "Settings", headerShown: false }}
+          />
+          <Stack.Screen
+            name="about"
+            options={{ title: "About", headerShown: false }}
+          />
         </Stack>
       </ThemeProvider>
     </QueryClientProvider>

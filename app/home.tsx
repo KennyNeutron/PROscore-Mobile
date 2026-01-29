@@ -1,12 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React from "react";
-import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
+import {
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [menuVisible, setMenuVisible] = useState(false);
 
   return (
     <SafeAreaView className="flex-1 bg-dark-bg">
@@ -17,7 +26,10 @@ export default function HomeScreen() {
       >
         {/* Header with Profile and Greeting */}
         <View className="flex-row items-center mb-10">
-          <View className="mr-4">
+          <TouchableOpacity
+            className="mr-4"
+            onPress={() => setMenuVisible(true)}
+          >
             <View className="w-16 h-16 rounded-full border-2 border-brand-blue/30 overflow-hidden shadow-lg shadow-brand-blue/20">
               <Image
                 source={{
@@ -26,7 +38,7 @@ export default function HomeScreen() {
                 className="w-full h-full"
               />
             </View>
-          </View>
+          </TouchableOpacity>
           <View>
             <Text className="text-white text-lg font-bold tracking-tight">
               Good evening, Kenny
@@ -58,6 +70,22 @@ export default function HomeScreen() {
           />
         </View>
       </ScrollView>
+
+      {/* Avatar Menu Modal */}
+      <AvatarMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        onNavigate={(screen) => {
+          setMenuVisible(false);
+          if (screen === "logout") {
+            // storage.clearAll();
+            console.log("Session cleared");
+            router.replace("/");
+          } else {
+            router.push(screen as any);
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -105,5 +133,73 @@ function ModelCard({ title, description, iconName, onPress }: ModelCardProps) {
         </LinearGradient>
       </LinearGradient>
     </TouchableOpacity>
+  );
+}
+
+// Avatar Menu Component
+interface AvatarMenuProps {
+  visible: boolean;
+  onClose: () => void;
+  onNavigate: (screen: string) => void;
+}
+
+function AvatarMenu({ visible, onClose, onNavigate }: AvatarMenuProps) {
+  const menuItems = [
+    { id: "profile", label: "Profile", icon: "person-outline" },
+    { id: "settings", label: "Settings", icon: "settings-outline" },
+    { id: "about", label: "About", icon: "information-circle-outline" },
+    { id: "logout", label: "Logout", icon: "log-out-outline" },
+  ];
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <Pressable className="flex-1 bg-black/60 justify-end" onPress={onClose}>
+        <View className="bg-dark-card rounded-t-3xl px-4 py-6">
+          {/* Handle Bar */}
+          <View className="w-12 h-1 bg-gray-600 rounded-full self-center mb-6" />
+
+          {/* Menu Items */}
+          {menuItems.map((item, index) => (
+            <React.Fragment key={item.id}>
+              <Pressable
+                className="flex-row items-center px-4 py-4 active:bg-dark-border rounded-2xl"
+                onPress={() => onNavigate(item.id)}
+              >
+                <View className="w-10 h-10 items-center justify-center mr-4">
+                  <Ionicons
+                    name={item.icon as any}
+                    size={24}
+                    color={item.id === "logout" ? "#EF4444" : "#0056B8"}
+                  />
+                </View>
+                <Text
+                  className={`text-lg font-semibold ${
+                    item.id === "logout" ? "text-red-500" : "text-white"
+                  }`}
+                >
+                  {item.label}
+                </Text>
+              </Pressable>
+              {index < menuItems.length - 1 && (
+                <View className="h-px bg-dark-border mx-4 my-2" />
+              )}
+            </React.Fragment>
+          ))}
+
+          {/* Cancel Button */}
+          <Pressable
+            className="mt-4 bg-dark-border rounded-2xl px-4 py-4 items-center active:opacity-70"
+            onPress={onClose}
+          >
+            <Text className="text-white text-lg font-semibold">Cancel</Text>
+          </Pressable>
+        </View>
+      </Pressable>
+    </Modal>
   );
 }
