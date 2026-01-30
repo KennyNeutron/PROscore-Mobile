@@ -127,6 +127,13 @@ export default function HomeScreen() {
             iconName="flash"
             onPress={() => console.log("Junior selected")}
           />
+          <View className="h-6" />
+          <ModelCard
+            title="License"
+            description="Activation. Status. Security."
+            iconName="key"
+            onPress={() => console.log("License selected")}
+          />
         </View>
       </ScrollView>
 
