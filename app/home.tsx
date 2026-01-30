@@ -18,14 +18,15 @@ export default function HomeScreen() {
   const router = useRouter();
   const [menuVisible, setMenuVisible] = useState(false);
   const [userName, setUserName] = useState("User");
+  const [avatarUrl, setAvatarUrl] = useState("");
 
   // Get time-based greeting
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return "Good morning";
-    if (hour >= 12 && hour < 17) return "Good afternoon";
-    if (hour >= 17 && hour < 21) return "Good evening";
-    return "Good night";
+    if (hour >= 5 && hour < 12) return "Good morning!";
+    if (hour >= 12 && hour < 17) return "Good afternoon!";
+    if (hour >= 17 && hour < 21) return "Good evening!";
+    return "Good night !";
   };
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export default function HomeScreen() {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("full_name")
+          .select("full_name, avatar_url")
           .eq("id", user.id)
           .single();
 
@@ -45,6 +46,10 @@ export default function HomeScreen() {
           // Get only the first name (first word before space)
           const firstName = profile.full_name.split(" ")[0];
           setUserName(firstName);
+        }
+
+        if (profile?.avatar_url) {
+          setAvatarUrl(profile.avatar_url);
         }
       }
     };
@@ -65,10 +70,12 @@ export default function HomeScreen() {
             className="mr-4"
             onPress={() => setMenuVisible(true)}
           >
-            <View className="w-16 h-16 rounded-full border-2 border-brand-blue/30 overflow-hidden shadow-lg shadow-brand-blue/20">
+            <View className="w-16 h-16 rounded-full border-2 border-brand-blue overflow-hidden shadow-lg shadow-brand-blue/20">
               <Image
                 source={{
-                  uri: "https://xsgames.co/randomusers/assets/avatars/male/74.jpg",
+                  uri:
+                    avatarUrl ||
+                    "https://xsgames.co/randomusers/assets/avatars/male/74.jpg",
                 }}
                 className="w-full h-full"
               />
@@ -76,7 +83,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
           <View>
             <Text className="text-white text-lg font-bold tracking-tight">
-              {getGreeting()}, {userName}
+              {getGreeting()} {userName}
             </Text>
           </View>
         </View>
