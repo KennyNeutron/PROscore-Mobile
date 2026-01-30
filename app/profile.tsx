@@ -15,12 +15,14 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as avatarCache from "../services/avatarCache";
 import { supabase } from "../services/supabase";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   const [fullName, setFullName] = useState("");
@@ -28,10 +30,38 @@ export default function ProfileScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarLocalPath, setAvatarLocalPath] = useState<string | null>(null);
 
   useEffect(() => {
+    loadAvatar();
     fetchProfile();
   }, []);
+
+  const loadAvatar = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Load local avatar immediately (instant load)
+      const localPath = await avatarCache.getLocalAvatar(user.id);
+      if (localPath) {
+        setAvatarLocalPath(localPath);
+      }
+
+      // Sync avatar in background
+      setSyncing(true);
+      const syncedPath = await avatarCache.syncAvatar(user.id);
+      if (syncedPath && syncedPath !== localPath) {
+        setAvatarLocalPath(syncedPath);
+      }
+    } catch (error) {
+      console.error("Avatar load failed:", error);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const fetchProfile = async () => {
     try {
@@ -168,6 +198,14 @@ export default function ProfileScreen() {
           // Update avatar URL state
           setAvatarUrl(urlData.publicUrl);
 
+          // Cache avatar locally for offline access
+          const localPath = await avatarCache.cacheUploadedAvatar(
+            user.id,
+            urlData.publicUrl,
+            false, // Don't commit to persistent cache until profile is saved
+          );
+          setAvatarLocalPath(localPath);
+
           Alert.alert("Success", "Avatar uploaded successfully!");
         } catch (uploadError: any) {
           Alert.alert(
@@ -235,9 +273,9 @@ export default function ProfileScreen() {
             {/* Avatar */}
             <View className="items-center mb-8">
               <View className="w-32 h-32 rounded-full border-4 border-brand-blue overflow-hidden shadow-lg shadow-brand-blue/20 items-center justify-center bg-dark-card">
-                {avatarUrl ? (
+                {avatarLocalPath || avatarUrl ? (
                   <Image
-                    source={{ uri: avatarUrl }}
+                    source={{ uri: avatarLocalPath || avatarUrl }}
                     className="w-full h-full"
                   />
                 ) : (
@@ -246,9 +284,9 @@ export default function ProfileScreen() {
               </View>
               {isEditing && (
                 <TouchableOpacity
-                  className="mt-4"
                   onPress={pickImage}
                   disabled={saving}
+                  className="mt-4 mb-2"
                 >
                   {saving ? (
                     <View className="flex-row items-center">

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
   Image,
   Modal,
@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as avatarCache from "../services/avatarCache";
 import { supabase } from "../services/supabase";
 
 export default function HomeScreen() {
@@ -29,39 +30,52 @@ export default function HomeScreen() {
     return "Good night !";
   };
 
-  useEffect(() => {
+  useFocusEffect(
+    useCallback(() => {
+      loadUserData();
+    }, []),
+  );
+
+  const loadUserData = async () => {
     // Check authentication and fetch user profile
-    const fetchUserProfile = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      // If no user is logged in, redirect to login page
-      if (!user) {
-        router.replace("/");
-        return;
-      }
+    // If no user is logged in, redirect to login page
+    if (!user) {
+      router.replace("/");
+      return;
+    }
 
-      // Fetch user profile data
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, avatar_url")
-        .eq("id", user.id)
-        .single();
+    // Load local avatar immediately
+    const localPath = await avatarCache.getLocalAvatar(user.id);
+    if (localPath) {
+      setAvatarUrl(localPath);
+    }
 
-      if (profile?.full_name) {
-        // Get only the first name (first word before space)
-        const firstName = profile.full_name.split(" ")[0];
-        setUserName(firstName);
-      }
+    // Fetch user profile data
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, avatar_url")
+      .eq("id", user.id)
+      .single();
 
-      if (profile?.avatar_url) {
-        setAvatarUrl(profile.avatar_url);
-      }
-    };
+    if (profile?.full_name) {
+      // Get only the first name (first word before space)
+      const firstName = profile.full_name.split(" ")[0];
+      setUserName(firstName);
+    }
 
-    fetchUserProfile();
-  }, []);
+    // Sync avatar in background
+    const syncedPath = await avatarCache.syncAvatar(user.id);
+    if (syncedPath) {
+      setAvatarUrl(syncedPath);
+    } else if (profile?.avatar_url && !localPath) {
+      // Fallback to remote URL if sync failed and no local path
+      setAvatarUrl(profile.avatar_url);
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-dark-bg">
