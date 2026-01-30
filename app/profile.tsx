@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -20,11 +20,13 @@ import { supabase } from "../services/supabase";
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Form state
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -32,10 +34,75 @@ export default function ProfileScreen() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [avatarLocalPath, setAvatarLocalPath] = useState<string | null>(null);
 
+  // Track original data to detect changes
+  const [originalData, setOriginalData] = useState({
+    fullName: "",
+    phoneNumber: "",
+    address: "",
+    avatarUrl: "",
+  });
+
   useEffect(() => {
     loadAvatar();
     fetchProfile();
   }, []);
+
+  // Prevent leaving screen with unsaved changes
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+      if (!isEditing) {
+        return;
+      }
+
+      // Check if there are actual changes
+      const hasChanges =
+        fullName !== originalData.fullName ||
+        phoneNumber !== originalData.phoneNumber ||
+        address !== originalData.address ||
+        avatarUrl !== originalData.avatarUrl;
+
+      if (!hasChanges) {
+        return;
+      }
+
+      // Prevent default behavior of leaving the screen
+      e.preventDefault();
+
+      // Prompt the user to confirm the action
+      Alert.alert(
+        "Unsaved Changes",
+        "You have unsaved changes. What would you like to do?",
+        [
+          { text: "Cancel", style: "cancel", onPress: () => {} },
+          {
+            text: "Discard",
+            style: "destructive",
+            onPress: () => navigation.dispatch(e.data.action),
+          },
+          {
+            text: "Save",
+            onPress: async () => {
+              const success = await handleSave(() =>
+                navigation.dispatch(e.data.action),
+              );
+              // If save failed, we stay on screen (handled inside handleSave error path)
+            },
+          },
+        ],
+      );
+    });
+
+    return unsubscribe;
+  }, [
+    navigation,
+    isEditing,
+    fullName,
+    phoneNumber,
+    address,
+    avatarUrl,
+    originalData,
+    avatarLocalPath,
+  ]);
 
   const loadAvatar = async () => {
     try {
@@ -84,11 +151,19 @@ export default function ProfileScreen() {
       if (error) throw error;
 
       if (profile) {
-        setFullName(profile.full_name || "");
-        setEmail(profile.email || "");
-        setPhoneNumber(profile.phone_number || "");
-        setAddress(profile.address || "");
-        setAvatarUrl(profile.avatar_url || "");
+        const data = {
+          fullName: profile.full_name || "",
+          phoneNumber: profile.phone_number || "",
+          address: profile.address || "",
+          avatarUrl: profile.avatar_url || "",
+        };
+
+        setOriginalData(data);
+        setFullName(data.fullName);
+        setEmail(profile.email || ""); // Email is not editable
+        setPhoneNumber(data.phoneNumber);
+        setAddress(data.address);
+        setAvatarUrl(data.avatarUrl);
       }
     } catch (error: any) {
       Alert.alert("Error", error.message);
@@ -97,14 +172,14 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (navigateAfterSave?: () => void) => {
     try {
       setSaving(true);
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user) return;
+      if (!user) return false;
 
       const { error } = await supabase
         .from("profiles")
@@ -118,15 +193,38 @@ export default function ProfileScreen() {
 
       if (error) throw error;
 
-      Alert.alert("Success", "Profile updated successfully!");
-      setIsEditing(false);
+      // Update avatar cache metadata if we have a local path
+      // This "commits" the avatar change to the local cache
+      if (avatarLocalPath) {
+        await avatarCache.saveAvatarMetadata(
+          user.id,
+          avatarLocalPath,
+          new Date().toISOString(),
+        );
+      }
+
+      // Update original data to reflect saved changes
+      setOriginalData({
+        fullName,
+        phoneNumber,
+        address,
+        avatarUrl,
+      });
+
+      if (navigateAfterSave) {
+        navigateAfterSave();
+      } else {
+        Alert.alert("Success", "Profile updated successfully!");
+        setIsEditing(false);
+      }
+      return true;
     } catch (error: any) {
       Alert.alert("Error", error.message);
+      return false;
     } finally {
       setSaving(false);
     }
   };
-
   const pickImage = async () => {
     try {
       // Request permissions

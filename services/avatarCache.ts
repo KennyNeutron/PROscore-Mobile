@@ -38,7 +38,10 @@ export async function getLastSyncedAt(userId: string): Promise<string | null> {
 /**
  * Save local avatar metadata to AsyncStorage
  */
-async function saveAvatarMetadata(
+/**
+ * Save local avatar metadata to AsyncStorage
+ */
+export async function saveAvatarMetadata(
   userId: string,
   localPath: string,
   syncedAt: string,
