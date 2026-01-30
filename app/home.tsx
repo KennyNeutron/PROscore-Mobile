@@ -30,27 +30,33 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    // Fetch user profile to get full name
+    // Check authentication and fetch user profile
     const fetchUserProfile = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name, avatar_url")
-          .eq("id", user.id)
-          .single();
 
-        if (profile?.full_name) {
-          // Get only the first name (first word before space)
-          const firstName = profile.full_name.split(" ")[0];
-          setUserName(firstName);
-        }
+      // If no user is logged in, redirect to login page
+      if (!user) {
+        router.replace("/");
+        return;
+      }
 
-        if (profile?.avatar_url) {
-          setAvatarUrl(profile.avatar_url);
-        }
+      // Fetch user profile data
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.full_name) {
+        // Get only the first name (first word before space)
+        const firstName = profile.full_name.split(" ")[0];
+        setUserName(firstName);
+      }
+
+      if (profile?.avatar_url) {
+        setAvatarUrl(profile.avatar_url);
       }
     };
 
