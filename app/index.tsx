@@ -1,6 +1,8 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -11,16 +13,38 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { supabase } from "../services/supabase";
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    // Skip login logic and redirect to home for now
-    router.replace("/home");
-  };
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.replace("/home");
+      }
+    });
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        router.replace("/home");
+      }
+    });
+  }, []);
+
+  async function handleLogin() {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) Alert.alert("Login Failed", error.message);
+    setLoading(false);
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-dark-bg">
@@ -87,11 +111,16 @@ export default function LoginScreen() {
                 onPress={handleLogin}
                 activeOpacity={0.8}
                 className="mb-4 rounded-2xl overflow-hidden shadow-lg shadow-brand-blue/50"
+                disabled={loading}
               >
                 <View className="bg-brand-blue py-5 items-center rounded-2xl">
-                  <Text className="text-white text-lg font-bold tracking-wide">
-                    LOGIN
-                  </Text>
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text className="text-white text-lg font-bold tracking-wide">
+                      LOGIN
+                    </Text>
+                  )}
                 </View>
               </TouchableOpacity>
 
