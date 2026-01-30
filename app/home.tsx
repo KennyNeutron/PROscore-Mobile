@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   Modal,
@@ -17,6 +17,40 @@ import { supabase } from "../services/supabase";
 export default function HomeScreen() {
   const router = useRouter();
   const [menuVisible, setMenuVisible] = useState(false);
+  const [userName, setUserName] = useState("User");
+
+  // Get time-based greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return "Good morning";
+    if (hour >= 12 && hour < 17) return "Good afternoon";
+    if (hour >= 17 && hour < 21) return "Good evening";
+    return "Good night";
+  };
+
+  useEffect(() => {
+    // Fetch user profile to get full name
+    const fetchUserProfile = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.full_name) {
+          // Get only the first name (first word before space)
+          const firstName = profile.full_name.split(" ")[0];
+          setUserName(firstName);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-dark-bg">
@@ -42,7 +76,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
           <View>
             <Text className="text-white text-lg font-bold tracking-tight">
-              Good evening, Kenny
+              {getGreeting()}, {userName}
             </Text>
           </View>
         </View>
