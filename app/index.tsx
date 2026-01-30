@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -20,6 +21,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -96,14 +98,26 @@ export default function LoginScreen() {
                 <Text className="text-white text-sm font-semibold mb-2 ml-1">
                   PASSWORD
                 </Text>
-                <TextInput
-                  className="bg-dark-card border border-dark-border rounded-2xl px-6 py-4 text-white text-base"
-                  placeholder="Enter your password"
-                  placeholderTextColor="#666666"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                />
+                <View className="relative">
+                  <TextInput
+                    className="bg-dark-card border border-dark-border rounded-2xl px-6 py-4 pr-14 text-white text-base"
+                    placeholder="Enter your password"
+                    placeholderTextColor="#666666"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-0 bottom-0 justify-center"
+                  >
+                    <Ionicons
+                      name={showPassword ? "eye-off" : "eye"}
+                      size={22}
+                      color="#666666"
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Login Button */}
@@ -124,12 +138,23 @@ export default function LoginScreen() {
                 </View>
               </TouchableOpacity>
 
-              {/* Forgot Password */}
-              <TouchableOpacity className="items-center py-3">
-                <Text className="text-brand-blue text-sm font-semibold">
-                  Forgot Password?
-                </Text>
-              </TouchableOpacity>
+              {/* Create Account & Forgot Password Row */}
+              <View className="flex-row justify-between items-center mt-2">
+                <TouchableOpacity
+                  className="py-3"
+                  onPress={() => router.push("/register")}
+                >
+                  <Text className="text-brand-blue text-sm font-semibold">
+                    Create Account
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity className="py-3">
+                  <Text className="text-brand-blue text-sm font-semibold">
+                    Forgot Password?
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </ScrollView>

@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { supabase } from "../services/supabase";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -75,10 +76,10 @@ export default function HomeScreen() {
       <AvatarMenu
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
-        onNavigate={(screen) => {
+        onNavigate={async (screen) => {
           setMenuVisible(false);
           if (screen === "logout") {
-            // storage.clearAll();
+            await supabase.auth.signOut();
             console.log("Session cleared");
             router.replace("/");
           } else {

@@ -32,6 +32,10 @@ export default function RootLayout() {
             options={{ title: "PROscore", headerShown: false }}
           />
           <Stack.Screen
+            name="register"
+            options={{ title: "Create Account", headerShown: false }}
+          />
+          <Stack.Screen
             name="home"
             options={{ title: "Home", headerShown: false }}
           />
