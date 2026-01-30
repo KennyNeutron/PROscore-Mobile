@@ -234,15 +234,15 @@ export default function ProfileScreen() {
 
             {/* Avatar */}
             <View className="items-center mb-8">
-              <View className="w-32 h-32 rounded-full border-4 border-brand-blue overflow-hidden shadow-lg shadow-brand-blue/20">
-                <Image
-                  source={{
-                    uri:
-                      avatarUrl ||
-                      "https://xsgames.co/randomusers/assets/avatars/male/74.jpg",
-                  }}
-                  className="w-full h-full"
-                />
+              <View className="w-32 h-32 rounded-full border-4 border-brand-blue overflow-hidden shadow-lg shadow-brand-blue/20 items-center justify-center bg-dark-card">
+                {avatarUrl ? (
+                  <Image
+                    source={{ uri: avatarUrl }}
+                    className="w-full h-full"
+                  />
+                ) : (
+                  <Ionicons name="person" size={64} color="#4A90E2" />
+                )}
               </View>
               {isEditing && (
                 <TouchableOpacity

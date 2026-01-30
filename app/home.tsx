@@ -70,15 +70,12 @@ export default function HomeScreen() {
             className="mr-4"
             onPress={() => setMenuVisible(true)}
           >
-            <View className="w-16 h-16 rounded-full border-2 border-brand-blue overflow-hidden shadow-lg shadow-brand-blue/20">
-              <Image
-                source={{
-                  uri:
-                    avatarUrl ||
-                    "https://xsgames.co/randomusers/assets/avatars/male/74.jpg",
-                }}
-                className="w-full h-full"
-              />
+            <View className="w-16 h-16 rounded-full border-2 border-brand-blue overflow-hidden shadow-lg shadow-brand-blue/20 items-center justify-center bg-dark-card">
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} className="w-full h-full" />
+              ) : (
+                <Ionicons name="person" size={32} color="#4A90E2" />
+              )}
             </View>
           </TouchableOpacity>
           <View>
